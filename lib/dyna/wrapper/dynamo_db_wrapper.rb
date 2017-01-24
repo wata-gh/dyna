@@ -18,7 +18,7 @@ module Dyna
       log(:info, 'Create Table', :cyan, "#{dsl.table_name}")
 
       unless @options.dry_run
-        result = @ddb.create_table(dsl.definition)
+        result = @ddb.create_table(dsl.symbolize_keys)
         @options.updated = true
         result
       end

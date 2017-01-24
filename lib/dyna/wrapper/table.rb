@@ -21,10 +21,16 @@ module Dyna
 
       def update(dsl)
         unless provisioned_throughput_eql?(dsl)
+          wait_until_table_is_active
           update_table(dsl_provisioned_throughput(dsl))
         end
         unless global_secondary_indexes_eql?(dsl)
+          wait_until_table_is_active
           update_table_index(dsl, dsl_global_secondary_index_updates(dsl))
+        end
+        unless stream_specification_eql?(dsl)
+          wait_until_table_is_active
+          update_stream_specification(dsl_stream_specification(dsl))
         end
       end
 
@@ -41,6 +47,21 @@ module Dyna
         Exporter.table_definition(@table).symbolize_keys
       end
 
+      def wait_until_table_is_active
+        log(:info, "waiting table #{@table.table_name} to be ACTIVE or deleted..", false)
+        loop do
+          begin
+            desc = @ddb.describe_table(table_name: table_name).table
+          rescue => e
+            break
+          end
+          status = desc.table_status
+          log(:info, "status... #{status}", false)
+          break if desc.table_status == 'ACTIVE'
+          sleep 3
+        end
+      end
+
       private
       def definition_eql?(dsl)
         definition == dsl.definition
@@ -55,7 +76,7 @@ module Dyna
       end
 
       def dsl_provisioned_throughput(dsl)
-        dsl.definition.select {|k,v| k == :provisioned_throughput}
+        dsl.symbolize_keys.select {|k,v| k == :provisioned_throughput}
       end
 
       def global_secondary_indexes_eql?(dsl)
@@ -67,14 +88,14 @@ module Dyna
       end
 
       def dsl_global_secondary_indexes(dsl)
-        dsl.definition[:global_secondary_indexes]
+        dsl.symbolize_keys[:global_secondary_indexes]
       end
 
       def dsl_global_secondary_index_updates(dsl)
-        actual_by_name = self_global_secondary_indexes.group_by { |index| index[:index_name] }.each_with_object({}) do |(k, v), h|
+        actual_by_name = (self_global_secondary_indexes || {}).group_by { |index| index[:index_name] }.each_with_object({}) do |(k, v), h|
           h[k] = v.first
         end
-        expect_by_name = dsl_global_secondary_indexes(dsl).group_by { |index| index[:index_name] }.each_with_object({}) do |(k, v), h|
+        expect_by_name = (dsl_global_secondary_indexes(dsl) || {}).group_by { |index| index[:index_name] }.each_with_object({}) do |(k, v), h|
           h[k] = v.first
         end
         params = []
@@ -115,6 +136,33 @@ module Dyna
         params
       end
 
+      def stream_specification_eql?(dsl)
+        actual = self_stream_specification
+        expect = dsl_stream_specification(dsl)
+        if (actual == nil || actual[:stream_specification] == nil) &&
+           (expect == nil || expect[:stream_specification] == nil || expect[:stream_specification][:stream_enabled] == false)
+          return true
+        end
+        actual == expect
+      end
+
+      def self_stream_specification
+        definition.select {|k,v| k == :stream_specification}
+      end
+
+      def dsl_stream_specification(dsl)
+        dsl.symbolize_keys.select {|k,v| k == :stream_specification}
+      end
+
+      def update_stream_specification(dsl)
+        log(:info, "  table: #{@table.table_name}(update stream spec)\n".green + Dyna::Utils.diff(self_stream_specification, dsl, :color => @options.color, :indent => '    '), false)
+        unless @options.dry_run
+          params = { table_name: @table.table_name }.merge(dsl)
+          @ddb.update_table(params)
+          @options.updated = true
+        end
+      end
+
       def update_table(dsl)
         log(:info, "  table: #{@table.table_name}\n".green + Dyna::Utils.diff(self_provisioned_throughput, dsl, :color => @options.color, :indent => '    '), false)
         unless @options.dry_run
@@ -145,7 +193,7 @@ module Dyna
         unless @options.dry_run
           params = {
             table_name: @table.table_name,
-            attribute_definitions: dsl.definition[:attribute_definitions],
+            attribute_definitions: dsl.symbolize_keys[:attribute_definitions],
             global_secondary_index_updates: index_params,
           }
           @ddb.update_table(params)

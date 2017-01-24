@@ -24,15 +24,16 @@ module Dyna
 
     def self.table_definition(describe_table)
       {
-        'table_name'               => describe_table.table_name,
-        'key_schema'               => key_schema(describe_table),
-        'attribute_definitions'    => attribute_definitions(describe_table),
-        'provisioned_throughput'   => {
-          'read_capacity_units'    => describe_table.provisioned_throughput.read_capacity_units,
-          'write_capacity_units'   => describe_table.provisioned_throughput.write_capacity_units,
+        table_name:               describe_table.table_name,
+        key_schema:               key_schema(describe_table),
+        attribute_definitions:    attribute_definitions(describe_table),
+        provisioned_throughput:   {
+          read_capacity_units:    describe_table.provisioned_throughput.read_capacity_units,
+          write_capacity_units:   describe_table.provisioned_throughput.write_capacity_units,
         },
-        'local_secondary_indexes'  => local_secondary_indexes(describe_table),
-        'global_secondary_indexes' => global_secondary_indexes(describe_table),
+        local_secondary_indexes:  local_secondary_indexes(describe_table),
+        global_secondary_indexes: global_secondary_indexes(describe_table),
+        stream_specification:     stream_specification(describe_table),
       }
     end
 
@@ -45,8 +46,8 @@ module Dyna
     def self.key_schema(table)
       table.key_schema.map do |schema|
         {
-          'attribute_name' => schema.attribute_name,
-          'key_type'       => schema.key_type,
+          attribute_name: schema.attribute_name,
+          key_type:       schema.key_type,
         }
       end
     end
@@ -54,8 +55,8 @@ module Dyna
     def self.attribute_definitions(table)
       table.attribute_definitions.map do |definition|
         {
-          'attribute_name' => definition.attribute_name,
-          'attribute_type' => definition.attribute_type,
+          attribute_name: definition.attribute_name,
+          attribute_type: definition.attribute_type,
         }
       end
     end
@@ -64,15 +65,15 @@ module Dyna
       return nil unless table.global_secondary_indexes
       table.global_secondary_indexes.map do |index|
         {
-          'index_name'             => index.index_name,
-          'key_schema'             => key_schema(index),
-          'projection'             => {
-            'projection_type'      => index.projection.projection_type,
-            'non_key_attributes'   => index.projection.non_key_attributes,
+          index_name:             index.index_name,
+          key_schema:             key_schema(index),
+          projection:             {
+            projection_type:      index.projection.projection_type,
+            non_key_attributes:   index.projection.non_key_attributes,
           },
-          'provisioned_throughput' => {
-            'read_capacity_units'  => index.provisioned_throughput.read_capacity_units,
-            'write_capacity_units' => index.provisioned_throughput.write_capacity_units,
+          provisioned_throughput: {
+            read_capacity_units:  index.provisioned_throughput.read_capacity_units,
+            write_capacity_units: index.provisioned_throughput.write_capacity_units,
           },
         }
       end
@@ -82,14 +83,23 @@ module Dyna
       return nil unless table.local_secondary_indexes
       table.local_secondary_indexes.map do |index|
         {
-          'index_name'           => index.index_name,
-          'key_schema'           => key_schema(index),
-          'projection'           => {
-            'projection_type'    => index.projection.projection_type,
-            'non_key_attributes' => index.projection.non_key_attributes,
+          index_name:           index.index_name,
+          key_schema:           key_schema(index),
+          projection:           {
+            projection_type:    index.projection.projection_type,
+            non_key_attributes: index.projection.non_key_attributes,
           },
         }
       end
+    end
+
+    def self.stream_specification(table)
+      stream_spec = table.stream_specification
+      return nil unless stream_spec
+      {
+        stream_enabled: stream_spec.stream_enabled,
+        stream_view_type: stream_spec.stream_view_type,
+      }
     end
   end
 end
