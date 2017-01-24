@@ -3,7 +3,6 @@ $: << File.expand_path("#{File.dirname __FILE__}/../lib")
 require 'rubygems'
 require 'dyna'
 require 'optparse'
-require 'pry-byebug'
 
 Version = Dyna::VERSION
 
