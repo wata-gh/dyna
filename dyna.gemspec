@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["wata.gm@gmail.com"]
 
   spec.summary       = %q{Codenize DynamoDB table}
-  spec.description   = %q{Codenize DynamoDB table}
+  spec.description   = %q{Manager DynamoDB table by DSL}
   spec.homepage      = 'https://github.com/wata-gh/dyna'
   spec.license       = "MIT"
 
@@ -29,13 +29,13 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-  spec.add_dependency 'aws-sdk'
-  spec.add_dependency 'term-ansicolor'
-  spec.add_dependency 'diffy'
-  spec.add_dependency 'hashie'
+  spec.add_dependency 'aws-sdk', '~> 2'
+  spec.add_dependency 'term-ansicolor', '~> 1.4'
+  spec.add_dependency 'diffy', '~> 3.1'
+  spec.add_dependency 'hashie', '~> 3.4'
 
-  spec.add_development_dependency "bundler", "~> 1.13"
-  spec.add_development_dependency "rake", "~> 10.0"
-  spec.add_development_dependency "rspec", "~> 3.0"
-  spec.add_development_dependency 'pry-byebug'
+  spec.add_development_dependency 'bundler', '~> 1.13'
+  spec.add_development_dependency 'rake', '~> 10.0'
+  spec.add_development_dependency 'rspec', '~> 3.0'
+  spec.add_development_dependency 'pry-byebug', '~> 3.4'
 end
