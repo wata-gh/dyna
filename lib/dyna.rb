@@ -4,6 +4,7 @@ require 'term/ansicolor'
 require 'diffy'
 require 'hashie'
 require 'singleton'
+require 'pp'
 
 require 'aws-sdk'
 
