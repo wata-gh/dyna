@@ -155,6 +155,11 @@ module Dyna
       end
 
       def update_stream_specification(dsl)
+        dsl = dsl.dup
+        unless dsl[:stream_specification]
+          dsl[:stream_specification] = { stream_enabled: false }
+        end
+
         log(:info, "  table: #{@table.table_name}(update stream spec)\n".green + Dyna::Utils.diff(self_stream_specification, dsl, :color => @options.color, :indent => '    '), false)
         unless @options.dry_run
           params = { table_name: @table.table_name }.merge(dsl)
