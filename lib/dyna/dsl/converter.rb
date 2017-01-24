@@ -70,7 +70,7 @@ EOS
   table "#{name}" do
     key_schema(
       hash: #{table[:key_schema][0][:attribute_name].inspect},
-      range: #{table[:key_schema][1][:attribute_name].inspect},
+      range: #{table[:key_schema].size == 1 ? 'nil' : table[:key_schema][1][:attribute_name].inspect},
     )
 #{attribute_definitions}
     provisioned_throughput(
