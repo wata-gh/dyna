@@ -45,7 +45,6 @@ EOS
         end
 
         if table[:global_secondary_indexes]
-          p table[:global_secondary_indexes]
           global_secondary_indexes_tmpl = <<-EOS.chomp
 <% table[:global_secondary_indexes].each do |index| %>
     global_secondary_index <%= index[:index_name].inspect %> do
