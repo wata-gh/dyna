@@ -1,5 +1,6 @@
 module Dyna
   class Exporter
+    include Logger::ClientHelper
     include Filterable
 
     class << self
