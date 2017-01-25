@@ -56,7 +56,7 @@ Usage: dyna [options]
 ## Dynafile example
 
 ```ruby
-require 'other/groupfile'
+require 'other/dynafile'
 
 dynamo_db "ap-northeast-1" do
   table "test_table" do
