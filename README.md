@@ -81,12 +81,12 @@ dynamo_db "ap-northeast-1" do
 
     local_secondary_index "LocalIndexName" do
       key_schema hash: "ForumName", range: "Subject"
-      projection projection_type: 'ALL'
+      projection projection_type: "ALL"
     end
 
     global_secondary_index "GlobalIndexName" do
       key_schema hash: "ForumName", range: "Subject"
-      projection projection_type: 'ALL'
+      projection projection_type: "ALL"
       provisioned_throughput read_capacity_units: 1, write_capacity_units: 2
     end
 
