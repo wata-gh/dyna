@@ -32,6 +32,7 @@ end
       def output_table(name, table)
         local_secondary_indexes = ''
         global_secondary_indexes = ''
+        stream_specification = ''
         if table[:local_secondary_indexes]
           local_secondary_indexes_tmpl = <<-EOS.chomp
 <% table[:local_secondary_indexes].each do |index| %>
@@ -66,6 +67,18 @@ EOS
 <% end %>
 EOS
         attribute_definitions = ERB.new(attribute_definitions_tmpl).result(binding)
+
+        if table[:stream_specification]
+          stream_specification_tmpl = <<-EOS.chomp
+
+    stream_specification(
+      stream_enabled: <%= table[:stream_specification][:stream_enabled] %>,
+      stream_view_type: <%= table[:stream_specification][:stream_view_type].inspect %>,
+    )
+EOS
+          stream_specification = ERB.new(stream_specification_tmpl).result(binding)
+        end
+
         <<-EOS
   table "#{name}" do
     key_schema(
@@ -77,7 +90,7 @@ EOS
       read_capacity_units: #{table[:provisioned_throughput][:read_capacity_units]},
       write_capacity_units: #{table[:provisioned_throughput][:write_capacity_units]},
     )
-#{local_secondary_indexes}#{global_secondary_indexes}
+#{local_secondary_indexes}#{global_secondary_indexes}#{stream_specification}
   end
         EOS
       end
