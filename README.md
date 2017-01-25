@@ -4,8 +4,6 @@ Dyna is a tool to manage DynamoDB Table.
 
 It defines the state of DynamoDB Table using DSL, and updates DynamoDB Table according to DSL.
 
-TODO: Delete this and the text above, and describe your gem
-
 ## Installation
 
 Add this line to your application's Gemfile:
