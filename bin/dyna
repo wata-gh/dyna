@@ -44,21 +44,26 @@ ARGV.options do |opt|
     opt.on('-k', '--access-key ACCESS_KEY')                  {|v| access_key                    = v      }
     opt.on('-s', '--secret-key SECRET_KEY')                  {|v| secret_key                    = v      }
     opt.on('-r', '--region REGION')                          {|v| region                        = v      }
-    opt.on('-a', '--apply')                                  {|v| mode                          = :apply }
+    opt.on('-l', '--use-local')                              {    options[:use_local]           = true   }
+    opt.on('-a', '--apply')                                  {    mode                          = :apply }
     opt.on('-f', '--file FILE')                              {|v| file                          = v      }
     opt.on('',   '--table_names TABLE_NAMES', Array)         {|v| options[:table_names]         = v      }
     opt.on('',   '--exclude_table_names TABLE_NAMES', Array) {|v| options[:exclude_table_names] = v      }
-    opt.on('',   '--dry-run')                                {|v| options[:dry_run]             = true   }
-    opt.on('-e', '--export')                                 {|v| mode                          = :export}
+    opt.on('',   '--dry-run')                                {    options[:dry_run]             = true   }
+    opt.on('-e', '--export')                                 {    mode                          = :export}
     opt.on('-o', '--output FILE')                            {|v| output_file                   = v      }
-    opt.on('',   '--split')                                  {|v| split                         = true   }
-    opt.on('',   '--split-more')                             {|v| split                         = :more  }
+    opt.on('',   '--split')                                  {    split                         = true   }
+    opt.on('',   '--split-more')                             {    split                         = :more  }
     opt.on(''  , '--no-color')                               {    options[:color]               = false  }
     opt.on(''  , '--debug')                                  {    options[:debug]               = true   }
     opt.parse!
 
     aws_opts = {}
-    if access_key and secret_key
+    if options[:use_local]
+      options[:access_key_id] = access_key if access_key
+      options[:secret_access_key] = secret_key if secret_key
+      options[:region] = region if region
+    elsif access_key and secret_key
       aws_opts = {
         :access_key_id     => access_key,
         :secret_access_key => secret_key,
