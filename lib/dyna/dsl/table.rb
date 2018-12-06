@@ -11,6 +11,8 @@ module Dyna
 
           @result = Hashie::Mash.new({
             :table_name => table_name,
+            :scalable_targets => [],
+            :scaling_policies => [],
           })
           instance_eval(&block)
         end
@@ -67,6 +69,36 @@ module Dyna
           @result.global_secondary_indexes << {
             index_name: index_name,
           }.merge(index.result.symbolize_keys)
+        end
+
+        def billing_mode(billing_mode)
+          @result.billing_mode = billing_mode
+        end
+
+        def scalable_target(scalable_dimension:, min_capacity:, max_capacity:)
+          @result.scalable_targets << {
+            service_namespace: 'dynamodb',
+            scalable_dimension: scalable_dimension,
+            resource_id: "table/#{@result.table_name}",
+            min_capacity: min_capacity,
+            max_capacity: max_capacity,
+            role_arn: 'arn:aws:iam::214219211678:role/aws-service-role/dynamodb.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_DynamoDBTable',
+          }
+        end
+
+        def scaling_policy(scalable_dimension:, target_tracking_scaling_policy_configuration:)
+          predefined_metric_type = 'DynamoDBWriteCapacityUtilization'
+          if scalable_dimension == 'dynamodb:table:ReadCapacityUnits'
+            predefined_metric_type = 'DynamoDBReadCapacityUtilization'
+          end
+          @result.scaling_policies << {
+            policy_name: "#{predefined_metric_type}:table/#{@result.table_name}",
+            policy_type: 'TargetTrackingScaling',
+            resource_id: "table/#{@result.table_name}",
+            scalable_dimension: scalable_dimension,
+            service_namespace: 'dynamodb',
+            target_tracking_scaling_policy_configuration: target_tracking_scaling_policy_configuration.merge(predefined_metric_specification: {predefined_metric_type: predefined_metric_type}),
+          }
         end
 
         class LocalSecondaryIndex

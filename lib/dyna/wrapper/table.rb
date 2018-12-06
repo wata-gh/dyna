@@ -20,9 +20,9 @@ module Dyna
       end
 
       def update(dsl)
-        unless provisioned_throughput_eql?(dsl)
+        unless billing_mode_eql?(dsl) && provisioned_throughput_eql?(dsl)
           wait_until_table_is_active
-          update_table(dsl_provisioned_throughput(dsl))
+          update_table(dsl_update_table_params(dsl))
         end
         unless global_secondary_indexes_eql?(dsl)
           wait_until_table_is_active
@@ -31,6 +31,9 @@ module Dyna
         unless stream_specification_eql?(dsl)
           wait_until_table_is_active
           update_stream_specification(dsl_stream_specification(dsl))
+        end
+        unless auto_scaling_eql?(dsl)
+          update_auto_scaling(dsl)
         end
       end
 
@@ -63,12 +66,51 @@ module Dyna
       end
 
       private
+      def auto_scaling_eql?(dsl)
+        scalable_targets_eql?(dsl) && scaling_policies_eql?(dsl)
+      end
+
+      def scalable_targets_eql?(dsl)
+        df = definition[:scalable_targets].map do |target|
+          cmp = target.to_h
+          cmp.delete(:creation_time)
+          Dyna::Utils.normalize_hash(cmp)
+        end
+        df.sort_by {|s| s[:scalable_dimension] } == dsl[:scalable_targets].map { |target| Dyna::Utils.normalize_hash(target) }.sort_by {|s| s[:scalable_dimension] }
+      end
+
+      def scaling_policies_for_diff
+        definition[:scaling_policies].map { |policy|
+          #Dyna::Utils.normalize_hash({target_tracking_scaling_policy_configuration: {target_value: policy.target_tracking_scaling_policy_configuration.target_value} })
+          cmp = policy.to_h
+          cmp.delete(:alarms)
+          cmp.delete(:creation_time)
+          cmp.delete(:policy_arn)
+          Dyna::Utils.normalize_hash(cmp)
+        }.sort_by {|s| s[:scalable_dimension] }
+      end
+
+      def scaling_policies_eql?(dsl)
+        scaling_policies_for_diff == dsl.scaling_policies.map { |policy| Dyna::Utils.normalize_hash(policy) }.sort_by {|s| s[:scalable_dimension] }
+      end
+
       def definition_eql?(dsl)
         definition == dsl.definition
       end
 
       def provisioned_throughput_eql?(dsl)
+        if definition[:billing_mode] == 'PROVISIONED' && billing_mode_eql?(dsl)
+          return true
+        end
         self_provisioned_throughput == dsl_provisioned_throughput(dsl)
+      end
+
+      def billing_mode_eql?(dsl)
+        if definition[:billing_mode] == dsl[:billing_mode]
+          return true
+        end
+
+        definition[:billing_mode].nil? && dsl[:billing_mode].to_s == 'PROVISIONED'
       end
 
       def self_provisioned_throughput
@@ -77,6 +119,10 @@ module Dyna
 
       def dsl_provisioned_throughput(dsl)
         dsl.symbolize_keys.select {|k,v| k == :provisioned_throughput}
+      end
+
+      def dsl_update_table_params(dsl)
+        dsl.symbolize_keys.select {|k,v| k == :provisioned_throughput || k == :billing_mode}
       end
 
       def global_secondary_indexes_eql?(dsl)
@@ -169,10 +215,13 @@ module Dyna
       end
 
       def update_table(dsl)
-        log(:info, "  table: #{@table.table_name}\n".green + Dyna::Utils.diff(self_provisioned_throughput, dsl, :color => @options.color, :indent => '    '), false)
+        log(:info, "  table: #{@table.table_name}\n".green + Dyna::Utils.diff(self_provisioned_throughput.merge(billing_mode: definition[:billing_mode]), dsl, :color => @options.color, :indent => '    '), false)
         unless @options.dry_run
           params = dsl.dup
           params[:table_name] = @table.table_name
+          if billing_mode_eql?(dsl)
+            params.delete(:billing_mode) # don't send if billing mode does not change
+          end
           @ddb.update_table(params)
           @options.updated = true
         end
@@ -203,6 +252,37 @@ module Dyna
           }
           @ddb.update_table(params)
           @options.updated = true
+        end
+      end
+
+      def update_auto_scaling(dsl)
+        unless scalable_targets_eql?(dsl)
+          df_cmp = definition[:scalable_targets].map { |target| h = target.to_h; h.delete(:creation_time); Dyna::Utils.normalize_hash(h) }
+          dsl_cmp = dsl.scalable_targets.map { |target| Dyna::Utils.normalize_hash(target) }
+          log(:info, "  table: #{@table.table_name}(update scalable targets)\n".green + Dyna::Utils.diff(df_cmp, dsl_cmp, :color => @options.color, :indent => '    '), false)
+        end
+
+        unless scaling_policies_eql?(dsl)
+          dsl_cmp = dsl.scaling_policies.map { |policy| Dyna::Utils.normalize_hash(policy) }.sort_by {|s| s[:scalable_dimension] }
+          log(:info, "  table: #{@table.table_name}(update scaling policies)\n".green + Dyna::Utils.diff(scaling_policies_for_diff, dsl_cmp, :color => @options.color, :indent => '    '), false)
+        end
+
+        unless @options.dry_run
+          definition[:scalable_targets].each do |target|
+            @options.aas.deregister_scalable_target(
+              service_namespace: 'dynamodb',
+              resource_id: target.resource_id,
+              scalable_dimension: target.scalable_dimension,
+            )
+          end
+
+          dsl.scalable_targets.each do |target|
+            @options.aas.register_scalable_target(target)
+          end
+
+          dsl.scaling_policies.each do |policy|
+            @options.aas.put_scaling_policy(policy)
+          end
         end
       end
     end

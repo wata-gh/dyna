@@ -15,6 +15,8 @@ module Dyna
         )
       else
         @options.ddb = Aws::DynamoDB::Client.new
+        @options.aas = Aws::ApplicationAutoScaling::Client.new
+        Exporter.aas(@options.aas)
       end
     end
 

@@ -18,7 +18,10 @@ module Dyna
       log(:info, 'Create Table', :cyan, "#{dsl.table_name}")
 
       unless @options.dry_run
-        result = @ddb.create_table(dsl.symbolize_keys)
+        params = dsl.symbolize_keys
+        params.delete(:scalable_targets)
+        params.delete(:scaling_policies)
+        result = @ddb.create_table(params)
         @options.updated = true
         result
       end

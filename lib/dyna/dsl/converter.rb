@@ -79,6 +79,33 @@ EOS
           stream_specification = ERB.new(stream_specification_tmpl).result(binding)
         end
 
+        if table[:scalable_targets]
+          scalable_targets_tmpl = <<-EOS.chomp
+<% table[:scalable_targets].each do |target| %>
+    scalable_target(
+      scalable_dimension: <%= target[:scalable_dimension].inspect %>,
+      min_capacity: <%= target[:min_capacity] %>,
+      max_capacity: <%= target[:max_capacity] %>,
+    )
+<% end %>
+EOS
+          scalable_targets = ERB.new(scalable_targets_tmpl).result(binding)
+        end
+
+        if table[:scaling_policies]
+          scaling_policies_tmpl = <<-EOS.chomp
+<% table[:scaling_policies].each do |policy| %>
+    scaling_policy(
+      scalable_dimension: <%= policy[:scalable_dimension].inspect %>,
+      target_tracking_scaling_policy_configuration: {
+        target_value: <%= policy[:target_tracking_scaling_policy_configuration][:target_value] %>,
+      },
+    )
+<% end %>
+EOS
+          scaling_policies = ERB.new(scaling_policies_tmpl).result(binding)
+        end
+
         <<-EOS
   table "#{name}" do
     key_schema(
@@ -90,7 +117,9 @@ EOS
       read_capacity_units: #{table[:provisioned_throughput][:read_capacity_units]},
       write_capacity_units: #{table[:provisioned_throughput][:write_capacity_units]},
     )
-#{local_secondary_indexes}#{global_secondary_indexes}#{stream_specification}
+
+    billing_mode #{table[:billing_mode].inspect}
+#{local_secondary_indexes}#{global_secondary_indexes}#{stream_specification}#{scalable_targets}#{scaling_policies}
   end
         EOS
       end

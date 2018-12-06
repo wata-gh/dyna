@@ -28,6 +28,7 @@ module Dyna
         table_name:               describe_table.table_name,
         key_schema:               key_schema(describe_table),
         attribute_definitions:    attribute_definitions(describe_table),
+        billing_mode:             describe_table.billing_mode_summary&.billing_mode,
         provisioned_throughput:   {
           read_capacity_units:    describe_table.provisioned_throughput.read_capacity_units,
           write_capacity_units:   describe_table.provisioned_throughput.write_capacity_units,
@@ -35,7 +36,13 @@ module Dyna
         local_secondary_indexes:  local_secondary_indexes(describe_table),
         global_secondary_indexes: global_secondary_indexes(describe_table),
         stream_specification:     stream_specification(describe_table),
+        scalable_targets:         scalable_targets(describe_table),
+        scaling_policies:         scaling_policies(describe_table),
       }
+    end
+
+    def self.aas(aas)
+      @aas = aas
     end
 
     private
@@ -101,6 +108,44 @@ module Dyna
         stream_enabled: stream_spec.stream_enabled,
         stream_view_type: stream_spec.stream_view_type,
       }
+    end
+
+    def self.scalable_targets(table)
+      scalable_targets_by_resource_id["table/#{table.table_name}"]
+    end
+
+    def self.scalable_targets_by_resource_id
+      return @scalable_targets_by_resource_id if @scalable_targets_by_resource_id
+
+      results = []
+      next_token = nil
+      begin
+        resp = @aas.describe_scalable_targets(service_namespace: 'dynamodb', next_token: next_token)
+        resp.scalable_targets.each do |target|
+          results.push(target)
+        end
+        next_token = resp.next_token
+      end while next_token
+      @scalable_targets_by_resource_id = results.group_by(&:resource_id)
+    end
+
+    def self.scaling_policies(table)
+      scaling_policies_by_resource_id["table/#{table.table_name}"]
+    end
+
+    def self.scaling_policies_by_resource_id
+      return @scaling_policies_by_resource_id if @scaling_policies_by_resource_id
+
+      results = []
+      next_token = nil
+      begin
+        resp = @aas.describe_scaling_policies(service_namespace: 'dynamodb', next_token: next_token)
+        resp.scaling_policies.each do |policy|
+          results.push(policy)
+        end
+        next_token = resp.next_token
+      end while next_token
+      @scaling_policies_by_resource_id = results.group_by(&:resource_id)
     end
   end
 end
