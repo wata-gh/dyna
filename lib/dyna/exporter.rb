@@ -111,7 +111,7 @@ module Dyna
     end
 
     def self.scalable_targets(table)
-      scalable_targets_by_resource_id["table/#{table.table_name}"]
+      scalable_targets_by_resource_id["table/#{table.table_name}"] || []
     end
 
     def self.scalable_targets_by_resource_id
@@ -130,7 +130,7 @@ module Dyna
     end
 
     def self.scaling_policies(table)
-      scaling_policies_by_resource_id["table/#{table.table_name}"]
+      scaling_policies_by_resource_id["table/#{table.table_name}"] || []
     end
 
     def self.scaling_policies_by_resource_id
