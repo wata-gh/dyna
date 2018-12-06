@@ -22,7 +22,7 @@ module Dyna
       def update(dsl)
         unless billing_mode_eql?(dsl) && provisioned_throughput_eql?(dsl)
           wait_until_table_is_active
-          update_table(dsl_update_table_params(dsl))
+          update_table(dsl)
         end
         unless global_secondary_indexes_eql?(dsl)
           wait_until_table_is_active
@@ -122,10 +122,6 @@ module Dyna
         dsl.symbolize_keys.select {|k,v| k == :provisioned_throughput}
       end
 
-      def dsl_update_table_params(dsl)
-        dsl.symbolize_keys.select {|k,v| k == :provisioned_throughput || k == :billing_mode}
-      end
-
       def global_secondary_indexes_eql?(dsl)
         self_global_secondary_indexes == dsl_global_secondary_indexes(dsl)
       end
@@ -216,14 +212,23 @@ module Dyna
       end
 
       def update_table(dsl)
-        log(:info, "  table: #{@table.table_name}\n".green + Dyna::Utils.diff(self_provisioned_throughput.merge(billing_mode: definition[:billing_mode]), dsl, :color => @options.color, :indent => '    '), false)
+        params = {}
+        df_params = {}
+        unless billing_mode_eql?(dsl)
+          params[:billing_mode] = dsl[:billing_mode]
+          df_params[:billing_mode] = definition[:billing_mode]
+        end
+
+        if provisioned_throughput_eql?(dsl) == false && dsl[:scalable_targets].empty?
+          params[:provisioned_throughput] = dsl[:provisioned_throughput].symbolize_keys
+          df_params[:provisioned_throughput] = self_provisioned_throughput[:provisioned_throughput]
+        end
+
+        return if params.empty?
+        log(:info, "  table: #{@table.table_name}\n".green + Dyna::Utils.diff(df_params, params, :color => @options.color, :indent => '    '), false)
         unless @options.dry_run
-          params = dsl.dup
           params[:table_name] = @table.table_name
-          if billing_mode_eql?(dsl)
-            params.delete(:billing_mode) # don't send if billing mode does not change
-          end
-          @ddb.update_table(params)
+          @ddb.update_table(params.symbolize_keys)
           @options.updated = true
         end
       end
