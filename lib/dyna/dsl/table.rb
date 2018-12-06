@@ -82,7 +82,6 @@ module Dyna
             resource_id: "table/#{@result.table_name}",
             min_capacity: min_capacity,
             max_capacity: max_capacity,
-            role_arn: 'arn:aws:iam::214219211678:role/aws-service-role/dynamodb.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_DynamoDBTable',
           }
         end
 

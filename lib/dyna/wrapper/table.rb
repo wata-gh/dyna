@@ -74,6 +74,7 @@ module Dyna
         df = definition[:scalable_targets].map do |target|
           cmp = target.to_h
           cmp.delete(:creation_time)
+          cmp.delete(:role_arn)
           Dyna::Utils.normalize_hash(cmp)
         end
         df.sort_by {|s| s[:scalable_dimension] } == dsl[:scalable_targets].map { |target| Dyna::Utils.normalize_hash(target) }.sort_by {|s| s[:scalable_dimension] }
@@ -256,33 +257,44 @@ module Dyna
       end
 
       def update_auto_scaling(dsl)
+        has_change = false
         unless scalable_targets_eql?(dsl)
-          df_cmp = definition[:scalable_targets].map { |target| h = target.to_h; h.delete(:creation_time); Dyna::Utils.normalize_hash(h) }
-          dsl_cmp = dsl.scalable_targets.map { |target| Dyna::Utils.normalize_hash(target) }
+          has_change = true
+          df_cmp = definition[:scalable_targets].sort_by { |target| target[:scalable_dimension] }.map do |target|
+            h = target.to_h
+            h.delete(:creation_time)
+            h.delete(:role_arn)
+            Dyna::Utils.normalize_hash(h)
+          end
+          dsl_cmp = dsl.scalable_targets.sort_by { |target| target[:scalable_dimension] }.map { |target| Dyna::Utils.normalize_hash(target) }
           log(:info, "  table: #{@table.table_name}(update scalable targets)\n".green + Dyna::Utils.diff(df_cmp, dsl_cmp, :color => @options.color, :indent => '    '), false)
         end
 
         unless scaling_policies_eql?(dsl)
+          has_change = true
           dsl_cmp = dsl.scaling_policies.map { |policy| Dyna::Utils.normalize_hash(policy) }.sort_by {|s| s[:scalable_dimension] }
           log(:info, "  table: #{@table.table_name}(update scaling policies)\n".green + Dyna::Utils.diff(scaling_policies_for_diff, dsl_cmp, :color => @options.color, :indent => '    '), false)
         end
 
         unless @options.dry_run
-          definition[:scalable_targets].each do |target|
-            @options.aas.deregister_scalable_target(
-              service_namespace: 'dynamodb',
-              resource_id: target.resource_id,
-              scalable_dimension: target.scalable_dimension,
-            )
-          end
+          if has_change
+            definition[:scalable_targets].each do |target|
+              @options.aas.deregister_scalable_target(
+                service_namespace: 'dynamodb',
+                resource_id: target.resource_id,
+                scalable_dimension: target.scalable_dimension,
+              )
+            end
 
-          dsl.scalable_targets.each do |target|
-            @options.aas.register_scalable_target(target)
-          end
+            dsl.scalable_targets.each do |target|
+              @options.aas.register_scalable_target(target)
+            end
 
-          dsl.scaling_policies.each do |policy|
-            @options.aas.put_scaling_policy(policy)
+            dsl.scaling_policies.each do |policy|
+              @options.aas.put_scaling_policy(policy)
+            end
           end
+          @options.updated = true
         end
       end
     end
