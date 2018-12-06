@@ -20,7 +20,8 @@ Gem::Specification.new do |spec|
   spec.bindir        = "bin"
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-  spec.add_dependency 'aws-sdk', '~> 2'
+  spec.add_dependency 'aws-sdk-dynamodb', '~> 1.18'
+  spec.add_dependency 'aws-sdk-applicationautoscaling', '~> 1.16'
   spec.add_dependency 'term-ansicolor', '~> 1.4'
   spec.add_dependency 'diffy', '~> 3.1'
   spec.add_dependency 'hashie', '~> 3.4'
