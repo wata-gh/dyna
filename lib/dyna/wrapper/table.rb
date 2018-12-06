@@ -21,7 +21,6 @@ module Dyna
 
       def update(dsl)
         unless billing_mode_eql?(dsl) && provisioned_throughput_eql?(dsl)
-          wait_until_table_is_active
           update_table(dsl)
         end
         unless global_secondary_indexes_eql?(dsl)
@@ -227,6 +226,7 @@ module Dyna
         return if params.empty?
         log(:info, "  table: #{@table.table_name}\n".green + Dyna::Utils.diff(df_params, params, :color => @options.color, :indent => '    '), false)
         unless @options.dry_run
+          wait_until_table_is_active
           params[:table_name] = @table.table_name
           @ddb.update_table(params.symbolize_keys)
           @options.updated = true
