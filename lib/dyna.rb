@@ -6,7 +6,8 @@ require 'hashie'
 require 'singleton'
 require 'pp'
 
-require 'aws-sdk'
+require 'aws-sdk-applicationautoscaling'
+require 'aws-sdk-dynamodb'
 
 require 'dyna/version'
 require 'dyna/logger'
