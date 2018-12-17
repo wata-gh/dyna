@@ -15,12 +15,16 @@ module Dyna
     end
 
     def export
-      @ddb.list_tables.table_names
-        .reject { |name| should_skip(name) }
-        .sort
-        .each_with_object({}) do |table_name, result|
-        result[table_name] = self.class.export_table(@ddb, table_name)
+      result = {}
+      @ddb.list_tables.map do |tables|
+        tables.table_names
+          .reject { |name| should_skip(name) }
+          .sort
+          .each do |table_name|
+          result[table_name] = self.class.export_table(@ddb, table_name)
+        end
       end
+      result
     end
 
     def self.table_definition(describe_table)
