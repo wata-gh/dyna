@@ -8,10 +8,12 @@ module Dyna
     end
 
     def tables
-      @ddb.list_tables.table_names.map do |table_name|
-        describe_table = @ddb.describe_table(table_name: table_name).table
-        Table.new(@ddb, describe_table, @options)
-      end
+      @ddb.list_tables.map { |tables|
+        tables.table_names.map do |table_name|
+          describe_table = @ddb.describe_table(table_name: table_name).table
+          Table.new(@ddb, describe_table, @options)
+        end
+      }.flatten
     end
 
     def create(dsl)
