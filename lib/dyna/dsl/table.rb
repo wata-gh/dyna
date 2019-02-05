@@ -13,6 +13,10 @@ module Dyna
             :table_name => table_name,
             :scalable_targets => [],
             :scaling_policies => [],
+            :time_to_live_specification => {
+              enabled: false,
+              attribute_name: nil,
+            }
           })
           instance_eval(&block)
         end
@@ -97,6 +101,13 @@ module Dyna
             scalable_dimension: scalable_dimension,
             service_namespace: 'dynamodb',
             target_tracking_scaling_policy_configuration: target_tracking_scaling_policy_configuration.merge(predefined_metric_specification: {predefined_metric_type: predefined_metric_type}),
+          }
+        end
+
+        def time_to_live_specification(enabled:, attribute_name:)
+          @result.time_to_live_specification = {
+            enabled: enabled,
+            attribute_name: attribute_name,
           }
         end
 

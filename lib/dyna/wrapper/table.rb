@@ -31,6 +31,9 @@ module Dyna
           wait_until_table_is_active
           update_stream_specification(dsl_stream_specification(dsl))
         end
+        unless time_to_live_eql?(dsl)
+          update_time_to_live(dsl)
+        end
         unless auto_scaling_eql?(dsl)
           update_auto_scaling(dsl)
         end
@@ -65,6 +68,23 @@ module Dyna
       end
 
       private
+
+      def aws_time_to_live
+        @ttl ||= @ddb.describe_time_to_live(table_name: @table.table_name).time_to_live_description
+      end
+
+      def time_to_live_eql?(dsl)
+        wait_until_table_is_active
+        ttl = aws_time_to_live
+        unless %w/ENABLED DISABLED/.include?(ttl.time_to_live_status)
+          raise "time to live status is #{ttl.time_to_live_status} and must be ENABLED or DISABLED to apply"
+        end
+        same_status = dsl.time_to_live_specification.enabled.to_s == 'false' && ttl.time_to_live_status == 'DISABLED' || dsl.time_to_live_specification.enabled.to_s == 'true' && ttl.time_to_live_status == 'ENABLED'
+        same_name = dsl.time_to_live_specification.attribute_name.to_s == ttl.attribute_name
+
+        same_status && same_name
+      end
+
       def auto_scaling_eql?(dsl)
         scalable_targets_eql?(dsl) && scaling_policies_eql?(dsl)
       end
@@ -299,6 +319,31 @@ module Dyna
               @options.aas.put_scaling_policy(policy)
             end
           end
+          @options.updated = true
+        end
+      end
+
+      def update_time_to_live(dsl)
+        params = { table_name: @table.table_name }
+        if dsl.time_to_live_specification.enabled.to_s == 'true'
+          params[:time_to_live_specification] = {
+            enabled: dsl.time_to_live_specification.enabled,
+            attribute_name: dsl.time_to_live_specification.attribute_name,
+          }
+        else
+          params[:time_to_live_specification] = {
+            enabled: false,
+            attribute_name: aws_time_to_live.attribute_name,
+          }
+        end
+
+        log(:info, "  table: #{@table.table_name}(update time to live)".green, false)
+        log(:info, "    => enabled: #{params[:time_to_live_specification][:enabled]}".cyan, false)
+        log(:info, "    => attribute_name: #{params[:time_to_live_specification][:attribute_name]}".cyan, false)
+
+        unless @options.dry_run
+          log(:debug, params, false)
+          @ddb.update_time_to_live(params)
           @options.updated = true
         end
       end

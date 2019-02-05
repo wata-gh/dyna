@@ -23,6 +23,7 @@ module Dyna
         params = dsl.symbolize_keys
         params.delete(:scalable_targets)
         params.delete(:scaling_policies)
+        params.delete(:time_to_live_specification)
         result = @ddb.create_table(params)
         @options.updated = true
         result
