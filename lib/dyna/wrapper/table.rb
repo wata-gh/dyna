@@ -80,7 +80,7 @@ module Dyna
           raise "time to live status is #{ttl.time_to_live_status} and must be ENABLED or DISABLED to apply"
         end
         same_status = dsl.time_to_live_specification.enabled.to_s == 'false' && ttl.time_to_live_status == 'DISABLED' || dsl.time_to_live_specification.enabled.to_s == 'true' && ttl.time_to_live_status == 'ENABLED'
-        same_name = dsl.time_to_live_specification.attribute_name.to_s == ttl.attribute_name
+        same_name = dsl.time_to_live_specification.attribute_name.to_s == ttl.attribute_name.to_s
 
         same_status && same_name
       end
