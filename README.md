@@ -74,6 +74,11 @@ dynamo_db "ap-northeast-1" do
       attribute_type: "S",
     )
 
+    time_to_live_specification(
+      enabled: true,
+      attribute_name: "ttl",
+    )
+
     provisioned_throughput(
       read_capacity_units: 1,
       write_capacity_units: 2,
