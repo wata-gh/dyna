@@ -238,7 +238,7 @@ module Dyna
           df_params[:billing_mode] = definition[:billing_mode]
         end
 
-        if provisioned_throughput_eql?(dsl) == false && dsl[:scalable_targets].empty?
+        if dsl[:provisioned_throughput] && provisioned_throughput_eql?(dsl) == false && dsl[:scalable_targets].empty?
           params[:provisioned_throughput] = dsl[:provisioned_throughput].symbolize_keys
           df_params[:provisioned_throughput] = self_provisioned_throughput[:provisioned_throughput]
         end
