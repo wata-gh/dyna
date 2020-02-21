@@ -119,6 +119,7 @@ module Dyna
     end
 
     def self.scalable_targets_by_resource_id
+      return {} unless @aas
       return @scalable_targets_by_resource_id if @scalable_targets_by_resource_id
 
       results = []
@@ -138,6 +139,7 @@ module Dyna
     end
 
     def self.scaling_policies_by_resource_id
+      return {} unless @aas
       return @scaling_policies_by_resource_id if @scaling_policies_by_resource_id
 
       results = []
