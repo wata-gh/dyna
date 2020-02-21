@@ -282,6 +282,11 @@ module Dyna
       end
 
       def update_auto_scaling(dsl)
+        unless @options.aas
+          log(:warn, "auto scalings can not be used in local mode.".yellow, false)
+          return
+        end
+
         has_change = false
         unless scalable_targets_eql?(dsl)
           has_change = true
