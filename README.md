@@ -41,6 +41,7 @@ Usage: dyna [options]
     -k, --access-key ACCESS_KEY
     -s, --secret-key SECRET_KEY
     -r, --region REGION
+        --endpoint DYNAMO_ENDPOINT
     -a, --apply
     -f, --file FILE
     -n, --table_names TABLE_LIST

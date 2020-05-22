@@ -45,6 +45,7 @@ ARGV.options do |opt|
     opt.on('-s', '--secret-key SECRET_KEY')                  {|v| secret_key                    = v      }
     opt.on('-r', '--region REGION')                          {|v| region                        = v      }
     opt.on('-l', '--use-local')                              {    options[:use_local]           = true   }
+    opt.on('',   '--endpoint DYNAMO_ENDPOINT')               {|v| options[:dynamo_endpoint]     = v      }
     opt.on('-a', '--apply')                                  {    mode                          = :apply }
     opt.on('-f', '--file FILE')                              {|v| file                          = v      }
     opt.on('',   '--table_names TABLE_NAMES', Array)         {|v| options[:table_names]         = v      }
