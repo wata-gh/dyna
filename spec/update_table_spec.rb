@@ -88,7 +88,7 @@ EOS
       end
 
       wait_until_table_is_active(@ddb_client, table_name)
-      wait_until_global_index_is_active(@ddb_client, table_name, 'GlobalIndexName')
+      wait_until_global_index_is_active(@ddb_client, table_name)
 
       desc = describe_table(@ddb_client, table_name)
 

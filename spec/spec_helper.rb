@@ -47,7 +47,7 @@ def cleanup_dynamo
   client = Aws::DynamoDB::Client.new
   client.list_tables.table_names.each do |table_name|
     wait_until_table_is_active(client, table_name)
-    wait_until_global_index_is_active(client, table_name, '')
+    wait_until_global_index_is_active(client, table_name)
     client.delete_table(table_name: table_name)
     wait_until_table_is_active(client, table_name)
   end
