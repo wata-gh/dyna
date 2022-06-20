@@ -3,8 +3,7 @@ on:
   pull_request:
   push:
     branches:
-      # - "master"
-      - "*" # for test
+      - "master"
 jobs:
   test:
     strategy:
