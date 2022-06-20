@@ -2,10 +2,16 @@ $LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
 require 'dyna'
 require 'pry-byebug'
 
+ENDPOINT = if ENV["CI"] || ENV["DYNAMODB_LOCAL_ENDPOINT"]
+  { endpoint: ENV.fetch("DYNAMODB_LOCAL_ENDPOINT", "http://localhost:8000") }
+else
+  {}
+end
+
 RSpec.configure do |config|
   config.before(:each) {
     cleanup_dynamo
-    @ddb_client = Aws::DynamoDB::Client.new
+    @ddb_client = Aws::DynamoDB::Client.new(ENDPOINT)
   }
 
   config.after(:all) do
@@ -44,7 +50,7 @@ def wait_until_global_index_is_active(client, table_name)
 end
 
 def cleanup_dynamo
-  client = Aws::DynamoDB::Client.new
+  client = Aws::DynamoDB::Client.new(ENDPOINT)
   client.list_tables.table_names.each do |table_name|
     wait_until_table_is_active(client, table_name)
     wait_until_global_index_is_active(client, table_name)
@@ -62,7 +68,9 @@ def dynafile(options = {})
 
     options = {
       :logger => Logger.new(debug? ? $stdout : '/dev/null'),
-      :health_check_gc => true
+      :health_check_gc => true,
+      :use_local => (ENV["CI"] || ENV["DYNAMODB_LOCAL_ENDPOINT"]),
+      :endpoint => ENDPOINT[:endpoint],
     }.merge(options)
 
     client = Dyna::Client.new(options)
