@@ -8,10 +8,7 @@ module Dyna
       @options_hash = options
       if @options.use_local
         @options.ddb = Aws::DynamoDB::Client.new(
-          endpoint: @options.dynamo_endpoint || 'http://127.0.0.1:8000',
-          region: @options.region || 'ap-northeast-1',
-          access_key_id: @options.access_key_id || 'dummy',
-          secret_access_key: @options.secret_access_key || 'dummy',
+          endpoint: @options.dynamo_endpoint || 'http://localhost:8000',
         )
       else
         @options.ddb = Aws::DynamoDB::Client.new
